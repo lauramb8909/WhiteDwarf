@@ -34,6 +34,7 @@ def eta(A,Z,rho,T):
     return hbar*omegap(A,Z,rho)/(kappaB*T)
 
 
+
 # ion-electron free energy [Haensel book equation 2.154)
 def feinm(A,Z,rho,T):
     Z13   = np.power(Z, 1.0/3.0)
@@ -69,15 +70,17 @@ def Cvienm(A,Z,rho,tt):
     ttc = np.log10(tt)
     dx = 0.001
     tic = [ ttc - 2.0*dx , ttc - dx, ttc, ttc + dx, ttc + 2.0*dx]
+    log10 = np.log(10.0)
     
     Feic = np.zeros(5)
     for i,tcc in zip(range(5), tic):
         Feic[i] = feinm(A,Z,rho,np.power(10.0,tcc)) 
      
-    Df  = ( Feic[0] - 8.0*Feic[1] + 8.0*Feic[3] - Feic[4] ) / (12.0*dx*np.log(10.0) )
-    DDf = ( - Feic[4] + 16.0*Feic[3] - 30.0*Feic[2] + 16.0*Feic[1] - Feic[0]) /(12.0*np.power(np.log(10.0)*dx,2.0))
+    Df  = ( Feic[0] - 8.0*Feic[1] + 8.0*Feic[3] - Feic[4] ) / (12.0*dx*log10 )
+    DDf = ( - Feic[4] + 16.0*Feic[3] - 30.0*Feic[2] + 16.0*Feic[1] - Feic[0]) /(12.0*np.power(log10*dx,2.0))
       
     Cvfin =  -( DDf + Df  )
+    
    
     return Cvfin
 

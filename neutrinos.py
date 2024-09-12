@@ -1,31 +1,37 @@
 import numpy as np 
-from math import pi
 import Physical_Const as phys
-from pylab import *
 
 
-h=phys.h
-c=phys.c
-me=phys.me
-mu=phys.mu
-kappaB=phys.kappaB
+#----Constants------
 
-ee=2.310271142e-19
+h       = phys.hbar
+c        = phys.c
+G        = phys.G
 
-theta_w=np.arcsin(np.sqrt(0.2319))
-Cv=1.0/2.0+2.0*np.sin(theta_w)**2.0
-Cvv=1.0-Cv
-Ca=1.0/2.0
-Caa=1.0-Ca
+me_mev   = phys.me
+mevtoerg = phys.mevtoerg
+me    = me_mev * mevtoerg / c**2
+mu       = phys.mu
+kappaB   = phys.kappa
+
+ee       = phys.e_erg
+
+
+theta_w  = np.arcsin(np.sqrt(0.2319))
+Cv       = 1.0/2.0+2.0*np.sin(theta_w)**2.0
+Cvv      = 1.0-Cv
+Ca       = 1.0/2.0
+Caa      = 1.0-Ca
 
 def Lambda(T):
-    return  T / 5.9302e9
+    return T/5.9302e9
 
 def epsilon(rho,T):
-    return np.power( rho/1e9 ,1.0/3.0) / Lambda(T)
+    return np.power(rho/1e9,1.0/3.0)/Lambda(T)
 
 def Gamma2(A,Z,rho):
-   return  np.power(Z,2.0) * ee / ( kappaB * ( 1.0/np.power(4.0*np.pi*rho/(3.0*A*mu),1.0/3.0)))
+   return  np.power(Z,2.0)*ee/(kappaB*(1.0/np.power(4.0*np.pi*rho/(3.0*A*mu),1.0/3.0)))
+
 
 
 ###################################################################################################################################################
@@ -43,6 +49,7 @@ def Qpair(rho,T,n):
     fpair=(a0+a1*epsilon(rho,T)+a2*epsilon(rho,T)**2.0)*np.exp(-cpair*epsilon(rho,T))/(epsilon(rho,T)**3+b1pair/Lambda(T)+b2pair/Lambda(T)**2.0+b3pair/np.power(Lambda(T),3))
     return 0.5*((Cv**2.0+Ca**2.0)+n*(Cvv**2.0+Caa**2.0))*(1+((Cv**2.0-Ca**2.0)+n*(Cvv*2.0-Caa**2.0))/((Cv**2.0+Ca**2.0)+n*(Cvv**2.0+Caa**2.0))*qpair)*gpair*np.exp(-2.0/Lambda(T))*fpair;
 
+
 cc=[[1.008e11,0.0,0.0,0.0,0.0, 0.0,0.0],[8.156e10,9.728e8,-3.806e9,-4.384e9,-5.774e9,-5.249e9,-5.153e9],[1.067e11,-9.782e9,-7.193e9,-6.936e9,-6.893e9,-7.041e9,-7.193e9]]
 
 
@@ -53,16 +60,16 @@ def Qphoto_1(rho,T,n):
     rho=rho/2.0
     b4=6.290e-3;b5=7.483e-3; b6=3.061e-4
     if T>=1e7 and T<1e8:
-       dphoto=0.5654+log10(T/1e7)
+       dphoto=0.5654+np.log10(T/1e7)
        tau=np.log10(T/1e7)
        cc=[[1.008e11,0.0,0.0,0.0,0.0,0.0,0.0],[8.156e10,9.728e8,-3.806e9,-4.384e9,-5.774e9,-5.249e9,-5.153e9],[1.067e11,-9.782e9,-7.193e9,-6.936e9,-6.893e9,-7.041e9,-7.193e9]]
        dd=[[0.0,0.0,0.0,0.0,0.0],[ -1.879e10,-9.667e9,-5.602e9,-3.370e9,-1.825e9],[-2.919e10,-1.185e10,-7.270e9,-4.222e9,-1.560e9]]
        AAphoto1=cc[0][0];AAphoto2=cc[1][0];AAphoto3=cc[2][0];
        i=1
        while i<6:
-           AAphoto1=AAphoto1+ cc[0][i]*cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto2=AAphoto2+ cc[1][i]*cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto3=AAphoto3+ cc[2][i]*cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*sin(5.0/3.0*np.pi*i*tau)
+           AAphoto1=AAphoto1+ cc[0][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto2=AAphoto2+ cc[1][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto3=AAphoto3+ cc[2][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
            i=i+1
     elif T>=1e8 and T<1e9:
        dphoto=1.5654
@@ -72,9 +79,9 @@ def Qphoto_1(rho,T,n):
        AAphoto1=cc[0][0];AAphoto2=cc[1][0];AAphoto3=cc[2][0];
        i=1
        while i<6:
-           AAphoto1=AAphoto1+ cc[0][i]*cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto2= AAphoto2+cc[1][i]*cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto3= AAphoto3+cc[2][i]*cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*sin(5.0/3.0*np.pi*i*tau)
+           AAphoto1=AAphoto1+ cc[0][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto2= AAphoto2+cc[1][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto3= AAphoto3+cc[2][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
            i=i+1
     elif T>=1e9:
        dphoto=1.5654
@@ -84,9 +91,9 @@ def Qphoto_1(rho,T,n):
        AAphoto1=cc[0][0];AAphoto2=cc[1][0];AAphoto3=cc[2][0];
        i=1
        while i<6:
-           AAphoto1= AAphoto1+cc[0][i]*cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto2= AAphoto2+cc[1][i]*cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*sin(5.0/3.0*np.pi*i*tau)
-           AAphoto3= AAphoto3+cc[2][i]*cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*sin(5.0/3.0*np.pi*i*tau)
+           AAphoto1= AAphoto1+cc[0][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[0][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto2= AAphoto2+cc[1][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[1][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
+           AAphoto3= AAphoto3+cc[2][i]*np.cos(5.0/3.0*np.pi*i*tau)+dd[2][i-1]*np.sin(5.0/3.0*np.pi*i*tau)
            i=i+1
     qphoto=(0.666/np.power(1.0+2.045*Lambda(T),2.066))/(1.0+rho/(1.875e8*Lambda(T)+1.653e8*Lambda(T)**2+8.499e8*np.power(Lambda(T),3.0)-1.604e8*np.power(Lambda(T),4.0)));
     fphoto=(AAphoto1+AAphoto2*epsilon(rho,T)+AAphoto3*epsilon(rho,T))*np.exp(-dphoto*epsilon(rho,T))/(np.power(epsilon(rho,T),3.0)+b4/Lambda(T)+b5/Lambda(T)**2.0+b6/np.power(Lambda(T),3.0));
@@ -98,7 +105,6 @@ def Qphoto(rho,T,n):
     else:
        Qp=Qphoto_1(rho,T,n)
     return Qp
-
 
 ###################################################################################################################################################
 #Plasmon decay
@@ -124,33 +130,83 @@ def Qplasma(rho,T,n):
 def Qgas(rho,T,n,A,Z):
     bb3=7.75e5*np.power(T/1e8,1.5)+247.0*np.power(T/1e8,3.85); 
     bb4=4.07+0.0024*np.power(T/1e8,1.40); bb5=4.59e-5*np.power(T/1e8,-0.110);
-    aa0=23.5; aa1=6.83e4;aa2=7.81e8;aa3=230; aa4=6.70e5;aa5=7.66e9;bb1=4.47; bb2=0.0329;
-    eta=rho/(7.05e6*np.power(T/1e8,1.5)+5.12e4*np.power(T/1e8,3))
+    aa0=23.5; aa1=6.83e4;aa2=7.81e8;aa3=230; aa4=6.70e5; aa5=7.66e9; bb1=4.47; bb2=0.0329;
+    eta = rho /( 7.05e6 * np.power( T/1e8 , 1.5) + 5.12e4 * np.power( T/1e8 , 3.0))
     Fgas=1.0/(aa0+aa1/(T/1e8)**2.0+aa2*np.power(T/1e8,-5))+1.26*(1.0+1.0/eta)/(1.0+bb1/eta+bb2/eta**2);
     Ggas=1.0/((1.0+1e9*rho)*(aa3+aa4/(T/1e8)**2.0+aa5/np.power(T/1e8,5)))+1.0/(bb3/rho+bb4+bb5*np.power(rho,0.656));
     return 0.5738*(Z**2/A)*np.power(T/1e8,6.0)*rho*(0.5*((Cv**2.0+Ca**2.0)+n*(Cvv*2.0+Caa**2.0))*Fgas-0.5*((Cv**2.0-Ca**2.0)+n*(Cvv**2.0-Caa**2.0))*Ggas)
 
 def Qliquid(rho,T,n,A,Z):
-    u=2.0*np.pi*(np.log10(rho)-3.0)/10.0
-    GammaL=2.275e-1*Z**2.0/(T/1e8)*np.power((rho/1e6)/A,1.0/3.0);
-    v=-0.05483 - 0.01946*np.power(GammaL,-1.0/3.0) + 1.86310*np.power(GammaL,-2.0/3.0) - 0.78873/GammaL
-    w=-0.06711 + 0.06859*np.power(GammaL,-1.0/3.0) + 1.74360*np.power(GammaL,-2.0/3.0) - 0.74498/GammaL
-    fb=0.5*0.17946  + 0.00945*u+0.34529-0.05821*np.cos(u) - 0.04969*np.sin(u)-0.01089*np.cos(2.0*u)-0.01584*np.sin(2.0*u)-0.01147*np.cos(3.0*u) - 0.00504*np.sin(3.0*u)- 0.00656*cos(4.0*u) - 0.00281*np.sin(4.0*u)-0.00519*cos(5.0*u)
-    ft=0.5*0.06781-0.02342*u+0.24819-0.00944*np.cos(u)-0.02213*np.sin(u)-0.01289*np.cos(2.0*u)-0.01136*np.sin(2.0*u)-0.00589*np.cos(3.0*u)- 0.00467*np.sin(3.0*u)-0.00404*np.cos(4.0*u)-0.00131*np.sin(4.0*u)-0.00330*np.cos(5.0*u) 
-    gb=0.5*0.00766-0.01259*u+0.07917-0.00710*np.cos(u)+0.023*np.sin(u)-0.00028*np.cos(2.0*u)-0.01078*np.sin(2.0*u)+0.002232*np.cos(3.0*u)+ 0.00118*np.sin(3.0*u)+0.00044*np.cos(4.0*u)-0.00089*np.sin(4.0*u)+0.00158*np.cos(5.0*u)
+    u = 2.0 * np.pi * ( np.log10(rho) - 3.0 ) / 10.0
+    GammaL = 2.275e-1 * Z**2.0 / (T/1e8) * np.power( (rho/1e6) / A , 1.0/3.0);
+
+    alpham = [ -0.05483, - 0.01946 , 1.86310, -0.78873 ]
+    betam = [ -0.06711, 0.06859,  1.74360, -0.74498 ]
+
+    alpham = [ -0.06597, 0.06048, 1.7486, -0.7356 ]
+    betam = [ -0.07356, 0.10865,  1.70150, -0.73653 ]
+
+    v  =-0.05483 - 0.01946 * np.power(GammaL,-1.0/3.0) + 1.86310*np.power(GammaL,-2.0/3.0) - 0.78873/GammaL
+    w = -0.06711 + 0.06859*np.power(GammaL,-1.0/3.0) + 1.74360*np.power(GammaL,-2.0/3.0) - 0.74498/GammaL
+
+    a = [0.17946, - 0.05821,  -0.01089, -0.01147, -0.00656, -0.00519 ] 
+    b = [ -0.04969,  -0.01584,  -0.00504, -0.00281]
+    c = 0.00945; d= 0.34529
+    e =[ 0.06781,  -0.00944, -0.01289, -0.00589, -0.00404, -0.00330]
+    f = [ -0.02213, -0.01136, -0.00467,-0.00131 ]
+    g = -0.02342
+    h = 0.24819
+
+    a = [ 0.20933, - 0.06740,  - 0.01293, -0.01352, -0.00776, -0.00613 ] 
+    b = [ -0.05950,  -0.01837,  -0.00567, -0.00310]
+    c = 0.00952; d= 0.36029
+    e =[ 0.09304,  -0.01656, -0.01489, -0.00778, -0.00520, -0.00418]
+    f = [ -0.03076, -0.0139, -0.00522, -0.00161 ]
+    g = -0.02513
+    h = 0.27480
+
+    fb = 0.5 * 0.17946  + 0.00945*u + 0.34529 - 0.05821*np.cos(u) - 0.04969*np.sin(u) - 0.01089*np.cos(2.0*u) - 0.01584*np.sin(2.0*u) - 0.01147*np.cos(3.0*u) - 0.00504*np.sin(3.0*u)- 0.00656*np.cos(4.0*u) - 0.00281*np.sin(4.0*u)-0.00519*np.cos(5.0*u)
+    ft = 0.5*0.06781 - 0.02342*u + 0.24819-0.00944*np.cos(u)-0.02213*np.sin(u)-0.01289*np.cos(2.0*u)-0.01136*np.sin(2.0*u)-0.00589*np.cos(3.0*u)- 0.00467*np.sin(3.0*u)-0.00404*np.cos(4.0*u)-0.00131*np.sin(4.0*u)-0.00330*np.cos(5.0*u) 
+
+    i = [0.00766,  -0.00710, -0.00028, 0.002232, 0.00044, 0.00158]
+    j = [0.023, -0.01078 , 0.00118, -0.00089]
+    k = -0.01259
+    l = 0.07917
+    p = [ -0.00769, 0.00356, -0.00184, 0.00146, 0.00031, 0.00069 ]
+    q = [ 0.01052, -0.00354, -0.00014, -0.00018]
+    r = -0.00829
+    s = 0.05211
+
+    i =[0.00951,  -0.00838, -0.00011, 0.00244, 0.00046, 0.00168]
+    j = [0.02455, -0.01167 , 0.00132, -0.00097]
+    k = -0.01314
+    l = 0.08263
+    p = [ -0.00700, 0.00295, -0.00184, 0.00166, 0.00032, 0.00082 ]
+    q = [ 0.01231, -0.00445, 0.00002, -0.00026]
+    r = -0.00921
+    s = 0.05786
+
+    gb = 0.5*0.00766 - 0.01259*u + 0.07917 - 0.00710*np.cos(u) + 0.023*np.sin(u) - 0.00028*np.cos(2.0*u)-0.01078*np.sin(2.0*u)+0.002232*np.cos(3.0*u)+ 0.00118*np.sin(3.0*u)+0.00044*np.cos(4.0*u)-0.00089*np.sin(4.0*u)+0.00158*np.cos(5.0*u)
     gt=-0.5*0.00769-0.00829*u+0.05211+0.00356*np.cos(u)+0.01052*np.sin(u)-0.00184*np.cos(2.0*u)-0.00354*np.sin(2.0*u)+0.00146*np.cos(3.0*u)- 0.00014*np.sin(3.0*u)+ 0.00031*np.cos(4.0*u)-0.00018*np.sin(4.0*u)+0.00069*np.cos(5.0*u) 
     Gliquid=w*gb+(1.0-w)*gt
     Fliquid=v*fb+(1.0-v)*ft
-    return 0.5738*(Z**2/A)*np.power(T/1e8,6.0)*rho*(0.5*((Cv**2+Ca**2)+n*(Cvv**2+Caa**2))*Fliquid-0.5*((Cv**2-Ca**2)+n*(Cvv**2-Caa**2))*Gliquid)
+    return 0.5738*(Z**2 / A) * np.power( T/1e8 , 6.0) * rho * ( 0.5 * ( ( Cv**2 + Ca**2 ) + n * ( Cvv**2 + Caa**2 ) ) * Fliquid - 0.5 * ( ( Cv**2 - Ca**2 ) + n * ( Cvv**2 - Caa**2 ) ) * Gliquid )
 
 def Qcrystal(rho,T,n,A,Z):
     fband=np.exp(-7.12e-2*Z*np.power(rho/(A*1e6),1.0/3.0)*np.power(T/1e8,-1.0))
     GammaL=2.275e-1*Z**2.0/(T/1e8)*np.power((rho/1e6)/A,1.0/3.0);
     u=2.0*np.pi*(np.log10(rho)-3.0)/9.0
     aa=[[0.03677,-0.01066,-0.00458,-0.00177,-0.00138],[0.04719,-0.01353,-0.00619,-0.00211,-0.00176],[0.00106,-0.00048,-0.00022,0.00019,-1e-5],[-0.00047,0.00063,-0.00064,0.0003,-0.00006],[0.02231,-0.00589,-0.00279,-0.00073,-0.00043],[0.00024,0.00018,-0.00028,0.00012,-0.00004]]
+    #aa=[[0.03232,-0.00874,-0.00413,-0.00190,-0.00139],[0.04421,-0.00883,-0.00857,-0.00257,-0.00214],[0.00199,-0.00112,-0.00003,0.00014,1e-5],[-0.00111,0.00110,-0.00074,0.0024,-0.00004],[0.01599,-0.00191,-0.00330,-0.00075,-0.00047],[0.00017,0.00055,-0.00038,0.00011,-0.00003]]
     bb=[[-0.00244,-0.00206,-0.00037],[0.00456,-0.00174,-0.00031],[0.00658,-0.00180,0.00036],[0.01013,-0.00247,0.00052],[-0.00095,-0.00059,0.00002],[0.00339,-0.00082,0.00015]]
+    #bb=[[-0.00344,-0.00261,-0.00070],[0.00629,-0.00210,-0.00099],[0.00745,-0.00209,0.00044],[0.01286,-0.00281,0.00057],[0.00088,-0.00098,-0.00036],[0.00429,-0.00088,0.00014]]
+
+    #cc=[-0.00791,-0.02610,-0.00447,-0.00861,-0.00776,-0.00287]
     cc=[-0.01093,-0.02259,-0.00398,-0.00650,-0.00729,-0.00212]
+    
     dd=[0.12431,0.20343,0.02499,0.04087,0.06630,0.01332]
+    #dd=[0.139801,0.26993,0.02811,0.05414,0.08995,0.01803]
+
     F1=aa[0][0]/2.0+cc[0]*u+dd[0]; F5=aa[1][0]/2.0+cc[1]*u+dd[1]
     G1=aa[2][0]/2.0+cc[2]*u+dd[2]; G5=aa[3][0]/2.0+cc[3]*u+dd[3]
     Fp=aa[4][0]/2.0+cc[4]*u+dd[4]
@@ -164,6 +220,18 @@ def Qcrystal(rho,T,n,A,Z):
        Fp=Fp+aa[4][i]*np.cos(kk*u)+bb[4][i-1]*np.sin(kk*u)
        Gp=Gp+aa[5][i]*np.cos(kk*u)+bb[5][i-1]*np.sin(kk*u)
        i=i+1; kk=kk+1.0
+
+    alpham = [ 0.6252, 10.6819, -70.6879, -44.3349 ]
+    betam = [ 0.6307, 10.4966, -68.7973, -50.0581 ]
+    alpha0 = [ 0.5481, -20.4731, 223.922, -534.94 ]
+    beta0 = [ 0.5413, -20.2069, 220.7060, -524.1240 ]
+
+    alpham = [ 0.4889, 16.1962, -138.4860, 185.7060 ]
+    betam = [ 0.5111, 15.4195, -130.154, 159.6050 ]
+    alpha0 = [ 0.3173, -14.4048, 186.9100, -476.8100 ]
+    beta0 = [ 0.3073, -13.7973, 176.9940, -438.7520 ]
+
+
     v= 0.6252+10.6819*np.power(GammaL,-1.0/3.0)-70.6879*np.power(GammaL,-2.0/3.0)-44.3349/GammaL
     w=0.6307+10.4966*np.power(GammaL,-1.0/3.0)-68.7973*np.power(GammaL,-2.0/3.0)-50.0581/GammaL
     vv=0.5481-20.4731*np.power(GammaL,-1.0/3.0)+223.922*np.power(GammaL,-2.0/3.0)-534.94/GammaL
@@ -174,18 +242,20 @@ def Qcrystal(rho,T,n,A,Z):
     Gphonon=ww*Gp
     Qlattice=0.5738*(Z**2/A)*np.power(T/1e8,6.0)*rho*fband*(0.5*((Cv**2+Ca**2)+n*(Cvv**2+Caa**2))*Flattice-0.5*((Cv**2-Ca**2)+n*(Cvv**2-Caa**2))*Glattice)
     Qphonon=0.5738*(Z**2/A)*np.power(T/1e8,6.0)*rho*(0.5*((Cv**2+Ca**2)+n*(Cvv**2+Caa**2))*Fphonon-0.5*((Cv**2-Ca**2)+n*(Cvv**2-Caa**2))*Gphonon)
-    return Qlattice
+    return Qlattice + Qphonon
 
 def Qbrem(rho,T,n,A,Z):
+   # print Gamma2(A,Z,rho) / T
     if T>=0.3*(me*c**2/kappaB)*(np.sqrt(1.018*np.power(rho/(2.0*1e6),2.0/3.0)+1.0)-1.0):
        Brem=Qgas(rho,T,n,A,Z)
     else:
-       if Gamma2(A,Z,rho)/T>=180:
+       if Gamma2(A,Z,rho) / T >= 180.0:
           Brem=Qcrystal(rho,T,n,A,Z)
        else: 
           Brem=Qliquid(rho,T,n,A,Z)
     return Brem
 
-
+def QnuTotal(rho,T,A,Z):
+    return  Qbrem(rho,T,2.0,A,Z) + Qpair(rho,T,2.0) + Qphoto(rho,T,2.0) + Qplasma(rho,T,2.0)
 
 
