@@ -5,25 +5,7 @@ import Physical_Const as phys
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 
 #----Constants------
-hbar   = phys.hbar
-h      = hbar*(2.0*np.pi)
-c      = phys.c
-G      = phys.G
-Msun   = phys.Msun
-Rsun   = phys.Rsun
-sigma  = phys.sigmaSB
-me     = phys.me
-mu     = phys.mu
 pii    = np.pi
-
-Sigma   = np.power(me,4.0)*np.power(c,3.0)/(8.0*np.power(pii,2.0)*np.power(hbar,3.0))
-SigmaP  = c**2 * Sigma
-
-MA      = 2.0
-Sigma02 = (mu*MA*np.power(me*c/hbar,3))/(3*np.power(pii,2))
-Rdim    = c/np.sqrt(Sigma02*G)
-Cgrav   = G * Msun / c**2
-Mdim    = Rdim / Cgrav
 
 
 def TOV(r,y, EOS):
@@ -72,7 +54,7 @@ def TOV_HT(r,y, EOS, DEOS):
        pns = 1e-8
 
     rhons = EOS(pns)
-    DrhodP = DEOS( np.log10(pns) )
+    DrhodP = np.power(10.0, DEOS( np.log10(pns) ) )
 
     r2 = r*r
     r3 = r2*r 
@@ -231,18 +213,19 @@ def StaticSeq(y0,drr,rff, eos ):
     r0 = drr
     EoS_RFMT    = interp1d( eos[0] , eos[1] , kind='cubic' , bounds_error=False)
     EoS_RFMT_02 = interp1d( eos[1] , eos[0] , kind = 'cubic', bounds_error=False)
+    rho1 = eos[0][0]
 
     Static = ode(TOV)
     Static.set_integrator('dopri5',atol=1e-9)
     Static.set_initial_value(y0,r0)
     Static.set_f_params(EoS_RFMT_02)
 
-    rhons = EoS_RFMT_02( Static.y[1] ) *Sigma02
+    rhons = EoS_RFMT_02( Static.y[1] ) 
 
     while Static.successful() and Static.t < rff :
         Static.integrate(Static.t+drr)
-        if rhons > 1e3 and Static.y[1]>0.0:
-            rhons = EoS_RFMT_02( Static.y[1] ) *Sigma02
+        if rhons > 10*rho1 and Static.y[1]>0.0:
+            rhons = EoS_RFMT_02( Static.y[1] ) 
         else:
             break
 
@@ -252,10 +235,6 @@ def StaticSeq(y0,drr,rff, eos ):
     Jstar  = np.power( rstar , 4.0 ) * Static.y[3] / 6.0
     omegastar = Static.y[4] + 2.0 * Jstar / np.power(rstar,3.0)
       
-    #m2i = (1.0-2.0*y0[0]/r0) * np.exp(-nustar) * (4.0 * np.pi / 15.0 ) * ( EoS_RFMT_02(y0[1]) + y0[1] ) * ( 2.0 + np.power(10.0,DeDpF ( np.log10(y0[1]) )) ) * np.power(r0,5.0)
-    #p0i = 1.0 / 3.0 * np.power(r0,2.0) * ( 1.0 - 2.0 * y0[0] / r0 ) * np.exp(-nustar)  
-
-   # return [mstar,rstar,nustar,Jstar,omegastar,m2i,p0i]
     return [ mstar, rstar, nuc, Jstar, omegastar ]
 
 
@@ -264,19 +243,20 @@ def MassRadius( y0,drr,rff, eos, deos ):
     EoS_RFMT    = interp1d( eos[0] , eos[1] , kind='cubic' )
     EoS_RFMT_02 = interp1d( eos[1] , eos[0] , kind = 'cubic')
     DeDpF       = interp1d( np.log10( eos[1] ),  np.log10( deos ) , kind='cubic')
+    rho1 = eos[0][0]
 
     test=ode(TOV_HT).set_integrator('dopri5',atol=1e-7)
     test.set_initial_value(y0,r0)
     test.set_f_params(EoS_RFMT_02, DeDpF)
 
-    rhons = EoS_RFMT_02( test.y[1] ) *Sigma02
+    rhons = EoS_RFMT_02( test.y[1] ) 
 
     while test.successful() and test.t < rff :
        
         test.integrate(test.t+drr)
 
-        if rhons > 1e3 and test.y[1]>0.0:
-            rhons = EoS_RFMT_02( test.y[1] ) *Sigma02
+        if rhons > 10*rho1 and test.y[1]>0.0:
+            rhons = EoS_RFMT_02( test.y[1] ) 
         else:
             break
     
