@@ -4,13 +4,15 @@ from scipy.integrate import ode
 from scipy.integrate import odeint
 from scipy.optimize import brentq
 import Physical_Const as phys
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.optimize import curve_fit
+
+
 from pylab import *
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.artist as pltart
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
-from scipy.optimize import curve_fit
 
 import argparse as ap
 
@@ -20,25 +22,30 @@ args=parser.parse_args()
 
 
 #----Constants------
-hbar=phys.hbar
-h=hbar*(2.0*np.pi)
-c=phys.c
-G=phys.G
-Msun=phys.Msun
-sigma=phys.sigma
-me=phys.me
-mu=phys.mu
-Rsun = 6.95e10
+hbar   = phys.hbar
+h      = hbar*(2.0*np.pi)
+c      = phys.c
+G      = phys.G
+Msun   = phys.Msun
+Rsun   = phys.Rsum
+sigma  = phys.sigmaSB
+me     = phys.me
+mu     = phys.mu
+pii    = np.pi
 
-Sigma=np.power(me,4.0)*np.power(c,3.0)/(8.0*np.power(pi,2.0)*np.power(hbar,3.0))
-SigmaP = c**2 * Sigma
-MA=2.0
-Sigma02=(mu*MA*np.power(me*c/hbar,3))/(3*np.power(pi,2))
-Rdim=c/np.sqrt(Sigma02*G)
-Cgrav = G * Msun / c**2
+Sigma   = np.power(me,4.0)*np.power(c,3.0)/(8.0*np.power(pi,2.0)*np.power(hbar,3.0))
+SigmaP  = c**2 * Sigma
+
+MA      = 2.0
+Sigma02 = (mu*MA*np.power(me*c/hbar,3))/(3*np.power(pi,2))
+Rdim    = c/np.sqrt(Sigma02*G)
+Cgrav   = G * Msun / c**2
+Mdim    = Rdim / Cgrav
+
 #Rdim = 0.01*Rsun
 #Sigma02 = c**2 / ( Rdim**2 * G)
-Mdim = Rdim / Cgrav
+#br=c/np.sqrt(Sigma*G)
+#Mdim=(br*np.power(c,2.0)/G)/Msun
 
 rhonuc=2.7e14
 
@@ -78,28 +85,20 @@ def Interp1D_ll(x,xpoints,ypoints):
    return mm * ( x - xpoints[iix] ) + ypoints[iix]
 
 
-#br=c/np.sqrt(Sigma*G)
-#Mdim=(br*np.power(c,2.0)/G)/Msun
 
 #---read EoS----------
-rhoEoS,xeEoS,PEoS,PsatEoS,chip_EoS=np.loadtxt(args.file_EoS,usecols=(0,1,2,3,4),unpack=True)
-rhoi=np.log10(rhoEoS[0]); rhof=np.log10(rhoEoS[-1])
-xemin=xeEoS[0]; xemax=xeEoS[-1]
-
-#---degenerate pressure-------------
-def Pch_EoS(x):
-    pWD=SigmaP*(x*np.sqrt(1.0+np.power(x,2.0))*(2.0*np.power(x,2.0)/3.0-1.0)+np.log(np.sqrt(1.0+np.power(x,2.0))+x))
-    return pWD
-
-def func(x, b):
-    return (np.power(10.0,rhof)/Sigma02)*np.power(x,b)/np.power(xemax,b)
+rhoEoS, xeEoS, PEoS, PsatEoS, chip_EoS = np.loadtxt(args.file_EoS,usecols=(0,1,2,3,4),unpack=True)
+rhoi  = np.log10( rhoEoS[0] )
+rhof  = np.log10( rhoEoS[-1] )
+xemin = xeEoS[0]
+xemax = xeEoS[-1]
 
 #---find best fit-----
 popt, pcov = curve_fit(func, xeEoS , rhoEoS / Sigma02)
-afit=popt[0]
+afit = popt[0]
 #bfit=popt[1]
-print afit#, bfit
-NN=100
+print(afit)#, bfit
+
 
 log_xXe=np.linspace(np.log10(xeEoS[0]*0.5),np.log10(xeEoS[-1]*1.5),NN)
 xx_xe = np.power(10.0,log_xXe)
@@ -113,6 +112,16 @@ for xi in xx_xe:
 EoS_RFMT=interp1d( rho_RFMT , P_RFMT ,kind='cubic' )
 EoS_RFMT_02 = interp1d( P_RFMT , rho_RFMT, kind = 'cubic')
 #EoS_RFMT_02 = interp1d( p_grid , rho_gridp,kind='cubic')
+
+#---degenerate pressure-------------
+def Pch_EoS(x):
+    pWD = SigmaP*(x*np.sqrt(1.0+np.power(x,2.0))*(2.0*np.power(x,2.0)/3.0-1.0)+np.log(np.sqrt(1.0+np.power(x,2.0))+x))
+    return pWD
+
+def func(x, b):
+    return (np.power(10.0,rhof)/Sigma02)*np.power(x,b)/np.power(xemax,b)
+
+
 
 """
 #----Plot fit EoS------
@@ -159,14 +168,21 @@ exit()
 #---- HT first two equations----------------
 #ec4 : djdr ; ec5 : domegadr
 def TOV(r,y):
-    mns = y[0]
-    pns = y[1]
+    mns  = y[0]
+    pns  = y[1]
     nuns = y[2]
-    ec2 = 2.0 * ( 4.0 * np.pi * np.power(r,3.0) * pns + mns ) / ( r * ( r - 2.0 * mns ) )
-    ec1 = 4.0 * np.pi * np.power(r,2.0) * EoS_RFMT_02(pns)
-    ec3 = - 0.5 * ec2 * ( pns + EoS_RFMT_02(pns) )
+
+    rhons = EoS_RFMT_02(pns)
+
+    r2 = r*r
+    r3 = r2*r
+
+    ec2 = 2.0 * ( 4.0 * pii * r3 * pns + mns ) / ( r * ( r - 2.0 * mns ) )
+    ec1 = 4.0 * pii * r2 * rhons
+    ec3 = - 0.5 * ec2 * ( pns + rhons )
     ec4 = y[3]
-    ec5 = - 4.0 * y[3] / r + 4.0 * np.pi * np.power(r,2.0) * (pns + EoS_RFMT_02(pns) ) * ( y[3] + 4.0 * y[4] / r ) / ( r - 2.0 * mns )
+    ec5 = - 4.0 * y[3] / r + 4.0 * pii * r2 * ( pns + rhons ) * ( y[3] + 4.0 * y[4] / r ) / ( r - 2.0 * mns )
+    
     return array([ec1,ec3,ec2,ec5,ec4])
 
 
@@ -191,9 +207,11 @@ def TOV_HT_02(r,y):
 #----HT-TOV Equation: Static sequence----------
 #ec1: dMdr ; ec2: dnudr ; ec3: dP/dr
 def TOV_HT(r,y):
-    mwd = y[0];
-    nuwd = y[2];
-    pwd = y[1];
+    mwd  = y[0]
+    nuwd = y[2]
+    pwd  = y[1]
+
+
     ec1 = 4.0 * np.pi * np.power(r,2.0) * EoS_RFMT_02(pwd); # dmdr
     ec2 = 2.0 * ( 4.0 * np.pi * np.power(r,3.0) * pwd + mwd ) / ( r * ( r - 2.0 * mwd ) ) #dpdr
     ec3 = - 0.5 * ec2 * ( EoS_RFMT_02(pwd) + pwd ); # dnudr
@@ -255,17 +273,24 @@ test=ode(TOV_HT).set_integrator('dopri5',atol=1e-9)
 rf=0.1
 r0=1e-7
 def StaticSeq(y0,drr):
-    #r0 = drr*1e-2
+    r0 = drr
+
     Static.set_initial_value(y0,r0)
-    while Static.successful() and Static.t<rf and EoS_RFMT_02(Static.y[1])*Sigma02 > 1e3 and Static.y[1]>0.0:
+    rhons = EoS_RFMT_02( Static.y[1] ) *Sigma02
+
+    while Static.successful() and Static.t<rf and rhons > 1e3 and Static.y[1]>0.0:
         Static.integrate(Static.t+drr)
-    mstar=Static.y[0]
-    rstar=Static.t
-    nustar = np.log( 1.0 - 2.0 * Static.y[0] / Static.t ) - Static.y[2]
-    Jstar = np.power( Static.t , 4.0 ) * Static.y[3] / 6.0
-    omegastar = Static.y[4] + 2.0 * Jstar / np.power(Static.t,3.0)      
+        rhons = EoS_RFMT_02( Static.y[1] ) *Sigma02
+
+    mstar  = Static.y[0]
+    rstar  = Static.t
+    nuc    = np.log( 1.0 - 2.0 * Static.y[0] / Static.t ) - Static.y[2]
+    Jstar  = np.power( rstar , 4.0 ) * Static.y[3] / 6.0
+    omegastar = Static.y[4] + 2.0 * Jstar / np.power(rstar,3.0)
+      
     m2i = (1.0-2.0*y0[0]/r0) * np.exp(-nustar) * (4.0 * np.pi / 15.0 ) * ( EoS_RFMT_02(y0[1]) + y0[1] ) * ( 2.0 + np.power(10.0,DeDpF ( np.log10(y0[1]) )) ) * np.power(r0,5.0)
     p0i = 1.0 / 3.0 * np.power(r0,2.0) * ( 1.0 - 2.0 * y0[0] / r0 ) * np.exp(-nustar)  
+
     return [mstar,rstar,nustar,Jstar,omegastar,m2i,p0i]
 
 #----Loop to calculate slow rotating configuration (HT: first order equations)-------
