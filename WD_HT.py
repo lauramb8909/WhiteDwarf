@@ -87,21 +87,6 @@ def TOV_HT(r,y, EOS, DEOS):
     return np.array( [ ec1, ec3, ec2, ec5, ec4, ec6, ec7, ec8, ec9, ec10, ec11 ] )
 
 
-def Q22(x):
-    x2 = x*x 
-    x3 = x2*x
-   
-    if x>1e3:    
-        x5  = x2*x3
-        x6  = x3*x3; x7= x6*x;  x9 = x6*x3
-        x11 = x9*x2; x12 = x6*x6
-        x13 = x12*x
-        x15 = x12*x3 
-        A   = 168.0 / ( 85.0 * x15 ) + 128.0 / ( 65.0 * x13 ) + 280.0 / ( 143.0 * x11 ) + 64.0/(33.0*x9)+ 40.0 / (21.0* x7 ) + 64.0 / ( 35.0 * x5 ) + 8.0 / (5.0*x3)
-    else:
-        A   = (3.0/2.0)*( x2 - 1.0)*( np.log(x+1.0) - np.log(x-1.0) ) - ( 3.0*x3 - 5.0*x) /( x2 - 1.0 )
-    return A
-
 
 def OmegaK( Mwd, Rwd, DM, jwd, qwd):
 ###---- APJ, 762:117 (14pp), 2013  (Boshkayev, Rueda, Ruffini and Siutsou)
@@ -128,6 +113,22 @@ def OmegaK( Mwd, Rwd, DM, jwd, qwd):
     return np.sqrt( Mwd / np.power(Rwd,3.0) ) * F6
 
 #------ Functions to caculate the quadrupole
+def Q22(x):
+    x2 = x*x 
+    x3 = x2*x
+   
+    if x>1e3:    
+        x5  = x2*x3
+        x6  = x3*x3; x7= x6*x;  x9 = x6*x3
+        x11 = x9*x2; x12 = x6*x6
+        x13 = x12*x
+        x15 = x12*x3 
+        A   = 168.0 / ( 85.0 * x15 ) + 128.0 / ( 65.0 * x13 ) + 280.0 / ( 143.0 * x11 ) + 64.0/(33.0*x9)+ 40.0 / (21.0* x7 ) + 64.0 / ( 35.0 * x5 ) + 8.0 / (5.0*x3)
+    else:
+        A   = (3.0/2.0)*( x2 - 1.0)*( np.log(x+1.0) - np.log(x-1.0) ) - ( 3.0*x3 - 5.0*x) /( x2 - 1.0 )
+    return A
+
+
 def Q12(x):
     x2 = x*x
     x3 = x2*x
@@ -182,15 +183,11 @@ def IntCond_Rotating( OmegaS, Oold, rhoc, pc, nu0, drr , rf , eos , deos ):
 
     m0c    =  4.0 * np.pi * rhoc * dr3  / 3.0 
     Pi     = pc - 2.0 * np.pi * ( pc + rhoc ) * ( pc + rhoc/3.0 ) * dr2
-    nuc    = 4.0*np.pi*(  pc + rhoc / 3.0 )*dr2 
+    nuc    = nu0 + 4.0*np.pi*(  pc + rhoc / 3.0 )*dr2 
     
     omegac  = 1.0 + 8.0 * np.pi * ( pc + rhoc ) * dr2 / 3.0
     Domegac = 16.0 * np.pi * ( pc + rhoc ) * drr / 3.0
 
-    WD_s    = StaticSeq( [m0c, Pi, nuc, Domegac, omegac ] , drr, rf, eos )
-
-    nuc     =  nu0 + nuc
-    
     omega0  = OmegaS / Oold
     omegac  = omegac * omega0
     Domegac =  Domegac *  omega0 
@@ -231,7 +228,8 @@ def StaticSeq(y0,drr,rff, eos ):
 
     mstar  = Static.y[0]
     rstar  = Static.t
-    nuc    = np.log( 1.0 - 2.0 * Static.y[0] / Static.t ) - Static.y[2]
+    nuc    = np.log( 1.0 - 2.0*mstar / rstar ) - Static.y[2]
+
     Jstar  = np.power( rstar , 4.0 ) * Static.y[3] / 6.0
     omegastar = Static.y[4] + 2.0 * Jstar / np.power(rstar,3.0)
       
@@ -244,6 +242,7 @@ def MassRadius( y0,drr,rff, eos, deos ):
     EoS_RFMT_02 = interp1d( eos[1] , eos[0] , kind = 'cubic')
     DeDpF       = interp1d( np.log10( eos[1] ),  np.log10( deos ) , kind='cubic')
     rho1 = eos[0][0]
+    p1   = eos[1][0]
 
     test=ode(TOV_HT).set_integrator('dopri5',atol=1e-7)
     test.set_initial_value(y0,r0)
@@ -255,7 +254,7 @@ def MassRadius( y0,drr,rff, eos, deos ):
        
         test.integrate(test.t+drr)
 
-        if rhons > 10*rho1 and test.y[1]>0.0:
+        if rhons > 10*rho1 and test.y[1]>p1:
             rhons = EoS_RFMT_02( test.y[1] ) 
         else:
             break
@@ -266,7 +265,7 @@ def MassRadius( y0,drr,rff, eos, deos ):
     R2        = rstar*rstar
     R3        = R2 * rstar
     R4        = R2 * R2
-    nuc       = np.log( 1.0 - 2.0*mstar / rstar ) - test.y[2]
+    nuc       = test.y[2]
     Jstar     = R4 * test.y[3] / 6.0
     omegastar = test.y[4] + 2.0*Jstar / R3
    
@@ -283,15 +282,125 @@ def MassRadius( y0,drr,rff, eos, deos ):
     RR        =  rstar + epsilonz 
     
     Qstar     = J2 / mstar - (8.0/5.0) * mstar**3 * AAs[1]
-    #omebar=test.y[4]; fstar=test.y[3];
-    #m0star=test.y[5]; p0star=test.y[6]; 
-    #v2star = test.y[7] + AAs[1]*test.y[9]; h2star = test.y[8] + AAs[1]*test.y[10]
-    #print(test.y)
-    #return [mstar,rstar,nuc,Jstar,omegastar,Qstar,omebar,fstar,m0star,p0star,v2star,h2star,test.y[1],test.y[9],test.y[10],AAs[1],AAs[0]]
+
     return [ mstar, rstar,nuc, Jstar, omegastar, Qstar, Mass, RR]
 
 
 
+def EoS_Mmax( rhoii, rhoff, dr, rf, eos):
+#Rutine to find the Max Mass at J
+
+    EoS_RFMT    = interp1d( eos[0] , eos[1] , kind='cubic' , bounds_error=False)
+    EoS_RFMT_02 = interp1d( eos[1] , eos[0] , kind = 'cubic', bounds_error=False)
+
+    ww = 0.6180399; zz = 1.0 - ww;
+
+    xmin   = EoS_RFMT( rhoii )
+    xmax   = EoS_RFMT( rhoff )
+    
+    x0  = xmin + 0.0*( xmax - xmin );
+    xp  = x0 + 0.4*( xmax - x0 ) ;
+    y0i = IntCond_Static( EoS_RFMT_02(xp) , xp, dr )
+    mass_m  = StaticSeq( y0i , dr, rf, eos )[0]
+  
+    xnew =  xp + zz*( xmax - x0) 
+    y0i  = IntCond_Static( EoS_RFMT_02(xnew), xnew, dr )
+    mass_new  = StaticSeq( y0i , dr, rf, eos )[0]
+
+    for i in range(100):
+        
+        if ( mass_new > mass_m ):
+            x0   = xp;
+            xp   = xnew
+            xnew = ww*xnew + zz*xmax 
+            
+            mass_m = mass_new
+    
+            y0i = IntCond_Static( EoS_RFMT_02(xnew), xnew, dr )
+            mass_new  = StaticSeq( y0i , dr, rf, eos )[0]
+
+        else:
+            xmax = xnew
+            xnew = xp
+            xp   =  ww*xp + zz*x0
+            
+            mass_new = mass_m;
+         
+            y0i = IntCond_Static( EoS_RFMT_02(xp), xp, dr )
+            mass_m  = StaticSeq( y0i , dr, rf, eos )[0]
+          
+        if ( ( xmax - x0 )< 1e-9*( xp + xmax)  ): 
+            break;
+            
+    if (mass_m>mass_new):
+        xmax = xp;
+    else:
+        xmax = xnew;
+
+    return [ EoS_RFMT_02(xmax), mass_m]
 
 
+def EoS_RoTMmax( rhoii, rhoff,jwd, dr, rf, eos, deos):
+#Rutine to find the Max Mass at J
+
+    EoS_RFMT    = interp1d( eos[0] , eos[1] , kind='cubic' , bounds_error=False)
+    EoS_RFMT_02 = interp1d( eos[1] , eos[0] , kind = 'cubic', bounds_error=False)
+    DeDpF       = interp1d( np.log10( eos[1] ),  np.log10( deos ) , kind='cubic')
+
+    ww = 0.6180399;zz = 1.0 - ww;
+
+    xmin   = EoS_RFMT( rhoii )
+    xmax   = EoS_RFMT( rhoff )
+    
+    x0  = xmin + 0.0*( xmax - xmin );
+    xp  = x0 + 0.4*( xmax - x0 ) ;
+    y0i = IntCond_Static( EoS_RFMT_02(xp) , xp, dr )
+    MS  = StaticSeq( y0i , dr, rf, eos )
+    y0i = IntCond_Rotating( jwd, MS[3],  EoS_RFMT_02(xp), xp, MS[2], dr , rf , eos, DeDpF(np.log10(xp)) )
+    mass_m   = MassRadius(y0i, dr, rf,  eos, deos )[6]
+
+  
+    xnew =  xp + zz*( xmax - x0) 
+    y0i  = IntCond_Static( EoS_RFMT_02(xnew), xnew, dr )
+    MS  = StaticSeq( y0i , dr, rf, eos )
+    y0i = IntCond_Rotating( jwd, MS[3],  EoS_RFMT_02(xnew), xnew, MS[2], dr , rf , eos, DeDpF(np.log10(xnew)) )
+    mass_new   = MassRadius(y0i, dr, rf,  eos, deos )[6]
+
+
+    for i in range(100):
+        
+        if ( mass_new > mass_m ):
+            x0   = xp;
+            xp   = xnew
+            xnew = ww*xnew + zz*xmax 
+            
+            mass_m = mass_new
+    
+            y0i = IntCond_Static( EoS_RFMT_02(xnew), xnew, dr )
+            MS  = StaticSeq( y0i , dr, rf, eos )
+            y0i = IntCond_Rotating( jwd, MS[3],  EoS_RFMT_02(xnew), xnew, MS[2], dr , rf , eos,  DeDpF(np.log10(xnew)) )
+            mass_new   = MassRadius(y0i, dr, rf,  eos, deos )[6]
+
+        else:
+            xmax = xnew
+            xnew = xp
+            xp   =  ww*xp + zz*x0
+            
+            mass_new = mass_m;
+         
+            y0i = IntCond_Static( EoS_RFMT_02(xp), xp, dr )
+            MS  = StaticSeq( y0i , dr, rf, eos )
+            y0i = IntCond_Rotating( jwd, MS[3],  EoS_RFMT_02(xp), xp, MS[2], dr , rf , eos,  DeDpF(np.log10(xp)) )
+            mass_m  = MassRadius(y0i, dr, rf,  eos, deos )[6]
+
+          
+        if ( ( xmax - x0 )< 1e-9*( xp + xmax)  ): 
+            break;
+            
+    if (mass_m>mass_new):
+        xmax = xp;
+    else:
+        xmax = xnew;
+
+    return [ EoS_RFMT_02(xmax), mass_m]
 
