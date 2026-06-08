@@ -77,11 +77,11 @@ def TOV_HT(r,y, EOS, DEOS):
     ec8 = -ec2 * y[8] +  ( 1.0 + 0.5* r * ec2 )*( (2.0*pi4/3.0) * r3 * y[4]**2.0 * ( pns + rhons ) 
                                                + r2*( r - 2.0*mns ) * y[3]**2 / 6.0 ) * nuns # dvdr
     
-    ec9 =  - y[8] * ec2 + 4.0 * y[8] * ( 2.0 * pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[7] / ( mns + pi4 * r3 * pns ) + (1.0/6.0) * nuns  * y[3]**2.0 * ( 0.5 * r3 * ( r - 2.0*mns ) *ec2 - r2 / ec2 )+( pi4/3.0 )* r3 * y[4]**2.0 * ( pns + rhons ) * nuns * (  r * ec2 + 2.0 / ( (r - 2.0*mns ) * ec2)) #dh2dr
+    ec9 =  - y[8] * ec2 + 4.0 * y[8] * ( pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[7] / ( mns + pi4 * r3 * pns ) + (1.0/6.0) * nuns  * y[3]**2.0 * ( 0.5 * r3 * ( r - 2.0*mns ) *ec2 - r2 / ec2 )+( pi4/3.0 )* r3 * y[4]**2.0 * ( pns + rhons ) * nuns * (  r * ec2 + 2.0 / ( (r - 2.0*mns ) * ec2)) #dh2dr
     
     ec10 = -y[10]*ec2 #dvdr (homogenea)
     
-    ec11 = -y[10]* ec2 + 4.0 * y[10]*( 2.0 * pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[9] / ( mns + pi4 * r3 * pns) #dh2dr (homogenea)
+    ec11 = -y[10]* ec2 + 4.0 * y[10]*( pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[9] / ( mns + pi4 * r3 * pns) #dh2dr (homogenea)
     
     
     return np.array( [ ec1, ec3, ec2, ec5, ec4, ec6, ec7, ec8, ec9, ec10, ec11 ] )
@@ -279,9 +279,9 @@ def MassRadius( y0,drr,rff, eos, deos ):
     ppt       = -h2star - ( 1.0 / 3.0) * R2 * np.exp( -nuc ) * test.y[4]**2
     epsilont  = ppt * rstar  * ( rstar - 2.0 * mstar ) / ( mstar + 4.0 * pii *R3 * test.y[1]  )
     #equatorial radius
-    RR        =  rstar + epsilonz 
+    RR        =  rstar + epsilonz - 0.5*epsilont
     
-    Qstar     = J2 / mstar - (8.0/5.0) * mstar**3 * AAs[1]
+    Qstar     = J2 / mstar + (8.0/5.0) * mstar**3 * AAs[0]
 
     return [ mstar, rstar,nuc, Jstar, omegastar, Qstar, Mass, RR]
 
