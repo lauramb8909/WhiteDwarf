@@ -8,6 +8,8 @@ from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 pii    = np.pi
 
 
+
+
 def TOV(r,y, EOS):
 #----TOV Equation: Static sequence----------
 #ec1: dMdr ; ec2: dnudr ; ec3: dP/dr
@@ -53,15 +55,16 @@ def TOV_HT(r,y, EOS, DEOS):
     if pns<1e-8:
        pns = 1e-8
 
-    rhons = EOS(pns)
-    DrhodP = np.power(10.0, DEOS( np.log10(pns) ) )
-    rho2   = ( pns + rhons ) * y[6] * DrhodP
-    p2     = y[6] * ( pns + rhons )
-
     r2 = r*r
     r3 = r2*r 
     r4 = r2*r2
     pi4 = 4.0*pii  ; pi2 = 2.0*np.pi
+
+    rhons = EOS(pns)
+    DrhodP = np.power(10.0, DEOS( np.log10(pns) ) )
+    rho2   = ( pns + rhons ) * y[6] * DrhodP
+    p2     = y[6] * ( pns + rhons )
+    p2l2   = -y[8] - ( 1.0 / 3.0) * r2 * nuns * y[4]**2
     
     ec1 = pi4 * r2 * rhons   # dmdr
     ec2 = 2.0 * ( pi4 * r3 * pns + mns ) / ( r * ( r - 2.0*mns ) )  #dnudr
@@ -79,18 +82,15 @@ def TOV_HT(r,y, EOS, DEOS):
 
     ####### l=2 (second order in Omega)
 
-    m2  = -y[8] + (2.0*pi4*pii/3.0)* r4 * nuns * ( rhons + pns ) * y[4]**2.0  + (1.0/6.0) * r3 * nuns * ( r-2*mns) * y[3]**2.0
+    m2  = -y[8] + (2.0*pi4 / 3.0)* r4 * nuns * ( rhons + pns ) * y[4]**2.0  + (1.0/6.0) * r3 * nuns * ( r-2*mns) * y[3]**2.0
 
-    #ec8 = -ec2 * y[8] +  ( 1.0 + 0.5* r * ec2 )*( (2.0*pi4/3.0) * r3 * y[4]**2.0 * ( pns + rhons ) 
-    #                                           + r2*( r - 2.0*mns ) * y[3]**2 / 6.0 ) * nuns # dvdr
+    ec8 = y[8] * ( 1.0 / r - ec2 / 2.0 ) + m2 * ( 1.0 / r + ec2 / 2.0 ) # dvdr
 
-    ec8 = y[8] * ( 1.0 / r - ec2 / 2.0 ) + m2 * ( 1.0 / r + ec2 / 2.0 ) 
-    
-    ec9 =  - y[8] * ec2 + 4.0 * y[8] * ( pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[7] / ( mns + pi4 * r3 * pns ) + (1.0/6.0) * nuns  * y[3]**2.0 * ( 0.5 * r3 * ( r - 2.0*mns ) *ec2 - r2 / ec2 )+( pi4/3.0 )* r3 * y[4]**2.0 * ( pns + rhons ) * nuns * (  r * ec2 + 2.0 / ( (r - 2.0*mns ) * ec2)) #dh2dr
-    
+    ec9 = -( y[8] + 2.0* y[7] ) /  (mns + pi4*r3*pns ) + ec8 * ( 1.0 + 2.0 / ( r*ec2) ) - 2.0*(m2/r2)*(1.0/ec2 + r) - 2.0*pi4*r*p2l2 / ( ( r - 2.0 * mns ) * ec2 ) - ( nuns /  6.0 ) * ( r2 / ec2 ) * y[4]**2.0  #dh2dr
+
     ec10 = -y[10]*ec2 #dvdr (homogenea)
-    
-    ec11 = -y[10]* ec2 + 4.0 * y[10]*( pi2 * ( pns + rhons ) * r3 - mns ) / ( ec2 * r2 * ( r - 2.0*mns ) ) - 2.0 * y[9] / ( mns + pi4 * r3 * pns) #dh2dr (homogenea)
+
+    ec11 = -( y[10] + 2.0* y[9] ) /  (mns + pi4*r3*pns ) + ec10 * ( 1.0 + 2.0 / ( r*ec2) ) + 2.0*(y[10]/r2)*(1.0/ec2 + r) + 2.0*pi4*r*y[10] / ( ( r - 2.0 * mns ) * ec2 )  #dh2dr (homogenea)
     
     return np.array( [ ec1, ec3, ec2, ec5, ec4, ec6, ec7, ec8, ec9, ec10, ec11 ] )
 
@@ -100,8 +100,11 @@ def OmegaK( Mwd, Rwd, DM, jwd, qwd):
 ###---- APJ, 762:117 (14pp), 2013  (Boshkayev, Rueda, Ruffini and Siutsou)
     x  = Mwd / Rwd
     x2 = x*x
-    x3 = x2*x; x4 = x2*x2; x5 = x4*x
-    x6 = x3*x3; x7= x6*x
+    x3 = x2*x
+    x4 = x2*x2
+    x5 = x4*x
+    x6 = x3*x3
+    x7 = x6*x
 
     x3_1 = 1.0/x3
     
@@ -273,6 +276,7 @@ def MassRadius( y0,drr,rff, eos, deos ):
         if rhons > 10*rho1 and test.y[1]>p1:
             rhons = EoS_RFMT_02( test.y[1] ) 
         else:
+            test.integrate(test.t-drr)
             break
     
     mstar     = test.y[0]
@@ -284,6 +288,8 @@ def MassRadius( y0,drr,rff, eos, deos ):
     nuc       = test.y[2]
     Jstar     = R4 * test.y[3] / 6.0
     omegastar = test.y[4] + 2.0*Jstar / R3
+
+    #rhons     = EoS_RFMT_02( test.y[1] )
    
     J2        = Jstar*Jstar
     Mass      =  mstar + test.y[5] + J2 / R3 
@@ -370,8 +376,8 @@ def EoS_RoTMmax( rhoii, rhoff,jwd, dr, rf, eos, deos):
     xmin   = EoS_RFMT( rhoii )
     xmax   = EoS_RFMT( rhoff )
     
-    x0  = xmin + 0.0*( xmax - xmin );
-    xp  = x0 + 0.4*( xmax - x0 ) ;
+    x0  = xmin + 0.0*( xmax - xmin ) 
+    xp  = x0 + 0.4*( xmax - x0 ) 
     y0i = IntCond_Static( EoS_RFMT_02(xp) , xp, dr )
     MS  = StaticSeq( y0i , dr, rf, eos )
     y0i = IntCond_Rotating( jwd, MS[3],  EoS_RFMT_02(xp), xp, MS[2], dr , rf , eos, DeDpF(np.log10(xp)) )
@@ -386,7 +392,8 @@ def EoS_RoTMmax( rhoii, rhoff,jwd, dr, rf, eos, deos):
 
 
     for i in range(100):
-        
+
+
         if ( mass_new > mass_m ):
             x0   = xp;
             xp   = xnew
